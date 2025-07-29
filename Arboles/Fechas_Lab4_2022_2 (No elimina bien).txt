@@ -1,0 +1,268 @@
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <cstring>
+#include <cstddef>
+
+using namespace std;
+
+struct Elemento{
+    int fecha;
+    int stock;
+};
+
+struct NodoArbol{
+    Elemento elemento;  //Este dato representa el Elemento
+    struct NodoArbol * izquierda;  //puntero al hijo izquierdo
+    struct NodoArbol * derecha;   //puntero al hijo derecho
+};
+
+struct ArbolBinario{
+    struct NodoArbol * raiz;
+};
+
+struct ArbolBinarioBusqueda{
+    struct ArbolBinario arbolBinario;
+};
+
+void construir(struct ArbolBinarioBusqueda & arbol);
+void construir(struct ArbolBinario & arbol);
+void insertarRecursivo(struct NodoArbol *& raiz, Elemento elemento);
+void insertar(struct ArbolBinarioBusqueda & arbol, Elemento elemento);
+bool esNodoVacio(struct NodoArbol * raiz);
+void plantarArbolBinario(struct NodoArbol *& raiz, 
+                    struct NodoArbol * izquierda, Elemento elemento, 
+                    struct NodoArbol * derecha);
+struct NodoArbol * crearNuevoNodo(struct NodoArbol * izquierda, Elemento elemento,
+        struct NodoArbol * derecha) ;
+void recorrerEnOrden(const struct ArbolBinario & arbol);
+void recorrerEnOrdenRecursivo(struct NodoArbol * nodo);
+void imprimirNodo(struct NodoArbol * raiz);
+void recorrerPreOrdenRecursivo(struct NodoArbol * nodo);
+void recorrerPreOrden(const struct ArbolBinario & arbol);
+void RecorridoPostOrdenFusion(ArbolBinario &arbolD,NodoArbol *raiz,ArbolBinario &arbolito);
+NodoArbol *buscarRecursivo(struct NodoArbol * nodo, int dato);
+int comparaABB(int elementoA, int elementoB);
+struct NodoArbol *eliminarRecursivo(NodoArbol* nodo, int elemento);
+struct NodoArbol * minimoArbol(struct NodoArbol * nodo);
+bool esArbolVacio(const struct ArbolBinario & arbol);
+
+int main(int argc, char** argv) {
+     ArbolBinarioBusqueda arbolD;
+     construir(arbolD);
+     ifstream archDestino("Destino.txt",ios::in);
+     Elemento elemento;
+     int fecha,stock;
+     while(1){
+         archDestino>>fecha;
+         if(archDestino.eof())break;
+         archDestino.get();
+         archDestino>>stock;
+         elemento.fecha=fecha;
+         elemento.stock=stock;
+         insertar(arbolD,elemento);
+     }
+     ArbolBinarioBusqueda arbolE;
+     construir(arbolE);
+     
+     ifstream archEmisor("Emisor.txt",ios::in);
+     while(1){
+         archEmisor>>fecha;
+         if(archEmisor.eof())break;
+         archEmisor.get();
+         archEmisor>>stock;
+         elemento.fecha=fecha;
+         elemento.stock=stock;
+         insertar(arbolE,elemento);
+     }
+     
+     cout<<"ARBOL DESTINO EN ORDEN"<<endl;
+     recorrerEnOrden(arbolD.arbolBinario);
+     cout<<endl;
+     cout<<"ARBOL EMISOR EN ORDEN"<<endl;
+     recorrerEnOrden(arbolE.arbolBinario);
+     cout<<endl;
+     cout<<"ARBOL DESTINO EN PREORDEN"<<endl;
+     recorrerPreOrden(arbolD.arbolBinario);
+     cout<<endl;
+     cout<<"ARBOL EMISOR EN PREORDEN"<<endl;
+     recorrerPreOrden(arbolE.arbolBinario);
+     cout<<endl;
+     
+     
+     RecorridoPostOrdenFusion(arbolD.arbolBinario,arbolE.arbolBinario.raiz,arbolE.arbolBinario);
+     
+     cout<<"ARBOL DESTINO EN ORDEN"<<endl;
+     recorrerEnOrden(arbolD.arbolBinario);
+     cout<<endl;
+     cout<<"ARBOL EMISOR EN ORDEN"<<endl;
+     recorrerEnOrden(arbolE.arbolBinario);   
+     cout<<endl;
+     cout<<"ARBOL DESTINO EN PREORDEN"<<endl;
+     recorrerPreOrden(arbolD.arbolBinario);
+     cout<<endl;
+     cout<<"ARBOL EMISOR EN PREORDEN"<<endl;
+     recorrerPreOrden(arbolE.arbolBinario);
+     cout<<endl;
+    return 0;
+}
+
+void construir(struct ArbolBinarioBusqueda & arbol){
+    construir(arbol.arbolBinario);
+}
+
+void construir(struct ArbolBinario & arbol) {
+    arbol.raiz = nullptr;
+}
+
+void insertar(struct ArbolBinarioBusqueda & arbol, Elemento elemento){
+    insertarRecursivo(arbol.arbolBinario.raiz, elemento);
+}
+
+void insertarRecursivo(struct NodoArbol *& raiz, Elemento elemento){
+    if(esNodoVacio(raiz))
+        plantarArbolBinario(raiz, nullptr, elemento, nullptr);
+    else
+        if(raiz->elemento.fecha > elemento.fecha)
+            insertarRecursivo(raiz->izquierda, elemento);
+        else
+            if(raiz->elemento.fecha < elemento.fecha)
+                insertarRecursivo(raiz->derecha, elemento);
+            else
+                cout << "El elemento " << elemento.fecha << "Ya se encuentra en el árbol" << endl;
+}
+
+bool esNodoVacio(struct NodoArbol * raiz) {
+    return raiz == nullptr;
+}
+
+void plantarArbolBinario(struct NodoArbol *& raiz, 
+                    struct NodoArbol * izquierda, Elemento elemento, 
+                    struct NodoArbol * derecha){
+    
+    struct NodoArbol * nuevoNodo = crearNuevoNodo(izquierda, elemento, derecha);
+    raiz = nuevoNodo;
+}
+
+struct NodoArbol * crearNuevoNodo(struct NodoArbol * izquierda, Elemento elemento,
+        struct NodoArbol * derecha) {
+
+    struct NodoArbol * nuevo = new struct NodoArbol;
+    nuevo->derecha = derecha;
+    nuevo->izquierda = izquierda;
+    nuevo->elemento.fecha = elemento.fecha;
+    nuevo->elemento.stock = elemento.stock;
+    return nuevo;
+}
+
+void recorrerEnOrden(const struct ArbolBinario & arbol){
+    recorrerEnOrdenRecursivo(arbol.raiz);
+}
+void recorrerEnOrdenRecursivo(struct NodoArbol * nodo){
+    if (not esNodoVacio(nodo)){
+        recorrerEnOrdenRecursivo(nodo->izquierda);
+        imprimirNodo(nodo);
+        recorrerEnOrdenRecursivo(nodo->derecha);
+    }
+}
+
+void imprimirNodo(struct NodoArbol * raiz){
+    cout<<setw(5)<<raiz->elemento.fecha<<'-'<<raiz->elemento.stock<<' ';
+}
+
+void recorrerPreOrdenRecursivo(struct NodoArbol * nodo){
+    if(not esNodoVacio(nodo)){
+        imprimirNodo(nodo);
+        recorrerPreOrdenRecursivo(nodo->izquierda);
+        recorrerPreOrdenRecursivo(nodo->derecha);
+    }
+}
+
+void recorrerPreOrden(const struct ArbolBinario & arbol){
+    recorrerPreOrdenRecursivo(arbol.raiz);
+}
+
+void RecorridoPostOrdenFusion(ArbolBinario &arbolD,NodoArbol *raiz,ArbolBinario &arbolito){
+    if(not esNodoVacio(raiz)){
+        RecorridoPostOrdenFusion(arbolD,raiz->izquierda,arbolito);
+        RecorridoPostOrdenFusion(arbolD,raiz->derecha,arbolito);
+        NodoArbol *nodoCopiar=buscarRecursivo(arbolD.raiz,raiz->elemento.fecha);
+        Elemento elemento;
+        if(nodoCopiar !=nullptr){
+            nodoCopiar->elemento.stock+=raiz->elemento.stock;
+        }else{
+            elemento.fecha=raiz->elemento.fecha;
+            elemento.stock=raiz->elemento.stock;
+            insertarRecursivo(arbolD.raiz,elemento);
+        }
+        
+        cout<<"Debemos eliminar el nodo "<<raiz->elemento.fecha<<endl;
+        eliminarRecursivo(arbolito.raiz,raiz->elemento.fecha);
+        
+    }
+}
+
+NodoArbol *buscarRecursivo(struct NodoArbol * nodo, int dato){
+    if(esNodoVacio(nodo))
+        return nullptr;
+    if(comparaABB(nodo->elemento.fecha, dato) == 0) //se encuentra 
+        return nodo;
+    if(comparaABB(nodo->elemento.fecha, dato) == 1) //elemento menor
+        return buscarRecursivo(nodo->izquierda, dato);
+    else
+        if(comparaABB(nodo->elemento.fecha, dato) == -1) //elemento mayor
+            return buscarRecursivo(nodo->derecha, dato);
+}
+
+int comparaABB(int elementoA, int elementoB){
+    if(elementoA == elementoB) return 0;
+    else if(elementoA < elementoB) return -1;
+    else if(elementoA > elementoB) return 1;
+}
+
+struct NodoArbol *eliminarRecursivo(NodoArbol* nodo, int elemento){
+    if(esNodoVacio(nodo)){
+        return nodo;
+    }
+    if(elemento<nodo->elemento.fecha){
+        nodo->izquierda=eliminarRecursivo(nodo->izquierda,elemento);
+    }else{
+        if(elemento>nodo->elemento.fecha){
+            nodo->derecha=eliminarRecursivo(nodo->derecha,elemento);
+        }else{
+            //Se hallo el elemento
+            if(esNodoVacio(nodo->izquierda)){
+                NodoArbol *hijo=nodo->derecha;
+                delete nodo;
+                return hijo;
+            }else{
+                if(esNodoVacio(nodo->derecha)){
+                    NodoArbol *hijo=nodo->izquierda;
+                    delete nodo;
+                   return hijo;
+                }else{
+                     //Tiene los dos hijos
+                    NodoArbol *nodoMin=minimoArbol(nodo->derecha);
+                    nodo->elemento.fecha=nodoMin->elemento.fecha;
+                    nodo->elemento.stock=nodoMin->elemento.stock;
+                    nodo->derecha=eliminarRecursivo(nodo->derecha,nodoMin->elemento.fecha);
+                    
+                }
+            }
+        }
+        
+    }
+    return nodo;
+}
+
+struct NodoArbol * minimoArbol(struct NodoArbol * nodo){
+    if(esNodoVacio(nodo))
+        return nodo;
+    if(esNodoVacio(nodo->izquierda))
+        return nodo;
+    return minimoArbol(nodo->izquierda);
+}
+
+bool esArbolVacio(const struct ArbolBinario & arbol) {
+    return esNodoVacio(arbol.raiz);
+}
